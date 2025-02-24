@@ -2,12 +2,20 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer')
 const { MailtrapTransport } = require("mailtrap");
+const mongoose = require('mongoose');
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-
-// Initialize Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
+const connectDB = async () => {
+    try {
+        await mongoose.connect(process.env.MONGO_URI, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true
+        });
+        console.log('MongoDB Connected');
+    } catch (error) {
+        console.error(error.message);
+        process.exit(1);
+    }
+};
 
 const transporter = nodemailer.createTransport(
     MailtrapTransport({
@@ -20,17 +28,4 @@ const sender = {
     name: "Mailtrap Test",
 };
 
-// const recipients = [
-//     "furqan.fiqi@gmail.com",
-// ];
-
-// var transporter = nodemailer.createTransport({
-//     host: "live.smtp.mailtrap.io",
-//     port: 587,
-//     auth: {
-//         user: "api",
-//         pass: "e6d2303380497c11922f043030159cbf"
-//     }
-// });
-
-module.exports = { supabase, transporter, sender };
+module.exports = { transporter, sender,connectDB };
