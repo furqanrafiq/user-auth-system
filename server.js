@@ -12,7 +12,8 @@ app.use(cors());
 connectDB()
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));  // Ensure the correct path
+app.use('/api/auth', require('./routes/authRoutes')); 
+app.use('/api/user', require('./routes/userRoutes')); 
 
 // Start Server
 const PORT = process.env.PORT || 5000;
