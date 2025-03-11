@@ -4,10 +4,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { transporter } = require('../config/db');
 const User = require('../models/User');
+const UserService = require('../models/UserService');
 
 
 const register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, phoneNumber, isVendor, service } = req.body;
 
     try {
         let user = await User.findOne({ email });
@@ -16,8 +17,11 @@ const register = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        user = new User({ name, email, password: hashedPassword });
+        user = new User({ name, email, password: hashedPassword, phoneNumber, isVendor });
         await user.save();
+
+        let userServices = new UserService({ userId: user.uuid, serviceId: service.uuid, serviceName: service.name })
+        await userServices.save()
 
         res.status(201).json({ msg: 'User registered successfully' });
     } catch (error) {
@@ -37,7 +41,7 @@ const login = async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ msg: 'Login Successful', user: { token, id: user._id, name: user.name, email: user.email } });
+        res.json({ msg: 'Login Successful', user: { token, id: user.uuid, name: user.name, email: user.email } });
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }

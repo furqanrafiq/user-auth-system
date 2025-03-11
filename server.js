@@ -8,12 +8,14 @@ const app = express();
 // Middleware
 app.use(express.json());
 app.use(cors());
+app.use(express.urlencoded({ extended: true })); 
 
 connectDB()
 
 // Routes
 app.use('/api/auth', require('./routes/authRoutes')); 
 app.use('/api/user', require('./routes/userRoutes')); 
+app.use('/api/services', require('./routes/serviceRoutes')); 
 
 // Start Server
 const PORT = process.env.PORT || 5000;
