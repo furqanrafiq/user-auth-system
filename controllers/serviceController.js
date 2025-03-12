@@ -23,12 +23,12 @@ const getUserServices = async (req, res) => {
 };
 
 const insertUserService = async (req, res) => {
-    const { userId, service, description, price } = req.body;
+    const { userId, service, description, price, name } = req.body;
     try {
         const userServices = await UserService.findOne({ serviceId: service.uuid, userId });
         if (userServices) return res.status(400).json({ msg: 'User Service already exists' });
 
-        const newUserService = new UserService({ userId, serviceId: service.uuid, serviceName: service.name, description, price });
+        const newUserService = new UserService({ name, userId, serviceId: service.uuid, serviceName: service.name, description, price });
         await newUserService.save()
 
         res.status(200).json({ msg: 'User Service Added' });
