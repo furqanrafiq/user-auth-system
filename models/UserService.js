@@ -8,6 +8,10 @@ const UserServiceSchema = new mongoose.Schema({
     serviceName: { type: String, required: true },
     description: { type: String },
     price: { type: Number },
+    city: {type: String}, 
+    country: {type: String}, 
+    lat: {type: String}, 
+    long: {type: String}, 
     createdAt: { type: Date, default: Date.now },
 });
 
