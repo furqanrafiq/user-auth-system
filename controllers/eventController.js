@@ -1,8 +1,9 @@
 const Event = require("../models/Event");
 
 const getUserEvents = async (req, res) => {
+    const { userId } = req.query;
     try {
-        const events = await Event.find();
+        const events = await Event.find({ userId });
         res.status(200).json(events);
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
@@ -10,13 +11,10 @@ const getUserEvents = async (req, res) => {
 };
 
 const insertUserEvent = async (req, res) => {
-    const { event } = req.body;
+    const { type, date, time, location, budget, guestCount, userId } = req.body;
 
     try {
-        let event = await Event.findOne({ name });
-        if (event) return res.status(400).json({ msg: 'Event already exists' });
-
-        event = new Event({ name });
+        let event = new Event({ type, date, time, location, budget, guestCount, userId });
         await event.save();
 
         res.status(201).json({ msg: 'Event saved successfully' });

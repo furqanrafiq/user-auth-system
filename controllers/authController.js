@@ -20,10 +20,10 @@ const register = async (req, res) => {
         user = new User({ name, email, password: hashedPassword, phoneNumber, isVendor });
         await user.save();
 
-        if (isVendor) {
-            let userServices = new UserService({ userId: user.uuid, serviceId: service.uuid, serviceName: service.name })
-            await userServices.save()
-        }
+        // if (isVendor) {
+        //     let userServices = new UserService({ userId: user.uuid, serviceId: service.uuid, serviceName: service.name })
+        //     await userServices.save()
+        // }
 
         res.status(201).json({ msg: 'User registered successfully' });
     } catch (error) {
