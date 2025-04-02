@@ -34,8 +34,13 @@ const insertService = async (req, res) => {
 const getServicesProvidedByServiceName = async (req, res) => {
     const { serviceName } = req.query;
     try {
-        const services = await UserService.find({ serviceName });
-        res.status(200).json(services);
+        if (serviceName == 'All') {
+            const services = await UserService.find();
+            res.status(200).json(services);
+        } else {
+            const services = await UserService.find({ serviceName });
+            res.status(200).json(services);
+        }
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
