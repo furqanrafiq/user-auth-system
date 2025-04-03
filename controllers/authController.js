@@ -20,10 +20,10 @@ const register = async (req, res) => {
         user = new User({ name, email, password: hashedPassword, phoneNumber, isVendor });
         await user.save();
 
-        if (isVendor) {
-            let userServices = new UserService({ userId: user.uuid, serviceId: service.uuid, serviceName: service.name })
-            await userServices.save()
-        }
+        // if (isVendor) {
+        //     let userServices = new UserService({ userId: user.uuid, serviceId: service.uuid, serviceName: service.name })
+        //     await userServices.save()
+        // }
 
         res.status(201).json({ msg: 'User registered successfully' });
     } catch (error) {
@@ -43,7 +43,7 @@ const login = async (req, res) => {
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-        res.json({ msg: 'Login Successful', user: { token, id: user.uuid, name: user.name, email: user.email } });
+        res.json({ msg: 'Login Successful', user: { token, user } });
     } catch (error) {
         res.status(500).json({ error: 'Server error' });
     }
