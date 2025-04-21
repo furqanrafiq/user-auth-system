@@ -19,6 +19,7 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/bookings', require('./routes/bookingRoutes'));
 
 // Start Server
 const PORT = process.env.PORT || 5000;
