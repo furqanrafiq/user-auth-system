@@ -20,6 +20,8 @@ app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
 app.use('/api/bookings', require('./routes/bookingRoutes'));
+app.use('/api/guests', require('./routes/guestListRoutes'));
+app.use('/api/checklist', require('./routes/checklistRoutes'));
 
 // Start Server
 const PORT = process.env.PORT || 5000;

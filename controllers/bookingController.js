@@ -168,4 +168,54 @@ const sendRequestToVendor = async (req, res) => {
     }
 };
 
-module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor };
+
+const acceptBooking = async (req, res) => {
+    const { bookingId } = req.body;
+
+    try {
+        let booking = await Booking.findOne({ uuid: bookingId });
+        if (booking.eventId) {
+            const result = await Booking.updateOne(
+                { uuid: bookingId },
+                { $set: { isApproved: true } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(400).json({ msg: 'Booking not found or already updated' });
+            }
+
+            res.status(200).json({ msg: 'Request approved successfully' });
+        } else {
+            return res.status(400).json({ msg: 'Error' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error });
+    }
+};
+
+const rejectBooking = async (req, res) => {
+    const { bookingId } = req.body;
+
+    try {
+        let booking = await Booking.findOne({ uuid: bookingId });
+        if (booking.eventId) {
+            const result = await Booking.updateOne(
+                { uuid: bookingId },
+                { $set: { isRejected: true } }
+            );
+
+            if (result.modifiedCount === 0) {
+                return res.status(400).json({ msg: 'Booking not found or already updated' });
+            }
+
+            res.status(200).json({ msg: 'Request rejected successfully' });
+        } else {
+            return res.status(400).json({ msg: 'Error' });
+        }
+    } catch (error) {
+        res.status(400).json({ error: error });
+    }
+};
+
+
+module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking };
