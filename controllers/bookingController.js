@@ -85,7 +85,6 @@ const getVendorBookings = async (req, res) => {
         res.status(400).json({ error: error });
     }
 };
-
 const getSavedVendors = async (req, res) => {
     const { userId } = req.query;
 
@@ -98,25 +97,28 @@ const getSavedVendors = async (req, res) => {
             },
             {
                 $lookup: {
-                    from: "userservices",              // The name of the collection you're joining
-                    localField: "userServiceId",       // Field in Booking
-                    foreignField: "uuid",              // Matching field in UserService
+                    from: "userservices",
+                    localField: "userServiceId",
+                    foreignField: "uuid",
                     as: "ServiceDetails"
                 }
             },
             {
-                $unwind: "$ServiceDetails"         // Optional, but useful to flatten the array
+                $unwind: "$ServiceDetails"
             },
             {
                 $lookup: {
-                    from: "events",              // The name of the collection you're joining
-                    localField: "eventId",       // Field in booking
-                    foreignField: "uuid",              // Matching field in events
+                    from: "events",
+                    localField: "eventId",
+                    foreignField: "uuid",
                     as: "EventDetails"
                 }
             },
             {
-                $unwind: "$EventDetails"
+                $unwind: {
+                    path: "$EventDetails",
+                    preserveNullAndEmptyArrays: true // Keeps documents even if no matching event
+                }
             }
         ]);
 
@@ -217,5 +219,46 @@ const rejectBooking = async (req, res) => {
     }
 };
 
+const getUserVendors = async (req, res) => {
+    const { userId } = req.query;
 
-module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking };
+    try {
+        const bookings = await Booking.aggregate([
+            {
+                $match: {
+                    serviceRequestorId: userId,
+                    isApproved: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "userservices",              // The name of the collection you're joining
+                    localField: "userServiceId",       // Field in Booking
+                    foreignField: "uuid",              // Matching field in UserService
+                    as: "ServiceDetails"
+                }
+            },
+            {
+                $unwind: "$ServiceDetails"         // Optional, but useful to flatten the array
+            },
+            {
+                $lookup: {
+                    from: "events",              // The name of the collection you're joining
+                    localField: "eventId",       // Field in booking
+                    foreignField: "uuid",              // Matching field in events
+                    as: "EventDetails"
+                }
+            },
+            {
+                $unwind: "$EventDetails"
+            }
+        ]);
+
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(400).json({ error: error });
+    }
+};
+
+
+module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking, getUserVendors };

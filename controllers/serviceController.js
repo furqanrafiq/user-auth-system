@@ -4,7 +4,13 @@ const ServiceImages = require("../models/ServiceImages")
 const UserService = require("../models/UserService");
 const fs = require('fs');
 const path = require('path');
+const Event = require("../models/Event");
 const uploadFolder = path.join(__dirname, '../ServiceImages');
+const { OpenAI } = require("openai");
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
 
 const getAllServices = async (req, res) => {
     try {
@@ -127,6 +133,80 @@ const deleteUserService = async (req, res) => {
     }
 };
 
+const getRecommendedServices = async (req, res) => {
+    const { userId } = req.body;
+
+    try {
+
+        // Step 1: Get total budget
+        const totalBudgetResult = await Event.aggregate([
+            { $match: { userId } },
+            { $group: { _id: null, total: { $sum: "$budget" } } }
+        ]).toArray();
+
+        console.log(totalBudgetResult)
+
+        const totalBudget = totalBudgetResult[0]?.total || 0;
+
+        // Step 2: Get vendors with average rating
+        const vendors = await UserService.aggregate([
+            {
+                $lookup: {
+                    from: "reviews",
+                    localField: "uuid",
+                    foreignField: "serviceId",
+                    as: "vendorReviews"
+                }
+            },
+            {
+                $addFields: {
+                    averageRating: { $avg: "$vendorReviews.rating" }
+                }
+            },
+            {
+                $match: {
+                    averageRating: { $gte: 3.5 }, // adjust as needed
+                    price: { $lte: totalBudget }
+                }
+            },
+            {
+                $sort: { averageRating: -1 }
+            },
+            {
+                $limit: 10
+            }
+        ]).toArray();
+
+        if (!vendors.length) {
+            return res.json({ message: "No vendors found within budget." });
+        }
+
+        // Step 3: Format vendors for ChatGPT
+        const prompt = `
+A user has a total event budget of ${totalBudget}. 
+Here are some vendors to choose from:
+
+${vendors.map((v, i) => `${i + 1}. Service: ${v.category}, Price: ${v.price}, Avg Rating: ${v.averageRating.toFixed(2)}`).join('\n')}
+
+Please recommend the best 3 vendors based on rating-to-price ratio and explain why.
+`;
+
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4",
+            messages: [{ role: "user", content: prompt }]
+        });
+
+        res.json({
+            vendors,
+            gptRecommendation: completion.choices[0].message.content
+        });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Server error" });
+    }
+}
 
 
-module.exports = { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService }
+
+module.exports = { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService, getRecommendedServices }
