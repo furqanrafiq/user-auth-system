@@ -134,17 +134,24 @@ const deleteUserService = async (req, res) => {
 };
 
 const getRecommendedServices = async (req, res) => {
-    const { userId } = req.body;
+    const { userId } = req.query;
 
     try {
 
         // Step 1: Get total budget
         const totalBudgetResult = await Event.aggregate([
-            { $match: { userId } },
-            { $group: { _id: null, total: { $sum: "$budget" } } }
-        ]).toArray();
-
-        console.log(totalBudgetResult)
+            {
+                $match: {
+                    userId: userId  // userId is a plain string in your schema
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    total: { $sum: "$eventBudget" }
+                }
+            }
+        ]);
 
         const totalBudget = totalBudgetResult[0]?.total || 0;
 
@@ -165,7 +172,7 @@ const getRecommendedServices = async (req, res) => {
             },
             {
                 $match: {
-                    averageRating: { $gte: 3.5 }, // adjust as needed
+                    averageRating: { $gte: 2 }, // adjust as needed
                     price: { $lte: totalBudget }
                 }
             },
@@ -175,7 +182,7 @@ const getRecommendedServices = async (req, res) => {
             {
                 $limit: 10
             }
-        ]).toArray();
+        ])
 
         if (!vendors.length) {
             return res.json({ message: "No vendors found within budget." });
@@ -183,16 +190,16 @@ const getRecommendedServices = async (req, res) => {
 
         // Step 3: Format vendors for ChatGPT
         const prompt = `
-A user has a total event budget of ${totalBudget}. 
-Here are some vendors to choose from:
+        A user has a total event budget of ${totalBudget}. 
+        Here are some vendors to choose from:
 
-${vendors.map((v, i) => `${i + 1}. Service: ${v.category}, Price: ${v.price}, Avg Rating: ${v.averageRating.toFixed(2)}`).join('\n')}
+        ${vendors.map((v, i) => `${i + 1}. Service: ${v.category}, Price: ${v.price}, Avg Rating: ${v.averageRating.toFixed(2)}`).join('\n')}
 
-Please recommend the best 3 vendors based on rating-to-price ratio and explain why.
-`;
+        Please recommend the best 3 vendors based on rating-to-price ratio and explain why.
+        `;
 
         const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+            model: "gpt-4.1",
             messages: [{ role: "user", content: prompt }]
         });
 
