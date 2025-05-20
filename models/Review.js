@@ -8,6 +8,7 @@ const Review = new mongoose.Schema({
     serviceId: { type: String, default: null }, //service for which review has been added
     description: { type: String, default: null }, //name of guest
     rating: { type: Number, default: null }, //name of guest
+    isActive: { type: Boolean, default: false }, //name of guest
 }, { timestamps: true });
 
 module.exports = mongoose.model('review', Review);

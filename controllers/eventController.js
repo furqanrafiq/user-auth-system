@@ -49,6 +49,8 @@ const getUserEvents = async (req, res) => {
                     eventBudget: 1,
                     createdAt: 1,
                     updatedAt: 1,
+                    eventTime: 1,
+                    guestCount: 1,
                     totalSpent: 1,
                     amountSpent: { $round: ["$amountSpent", 2] }
                 }
@@ -111,6 +113,8 @@ const getEventDetails = async (req, res) => {
                     createdAt: 1,
                     updatedAt: 1,
                     totalSpent: 1,
+                    guestCount: 1,
+                    eventTime: 1,
                     amountSpent: { $round: ["$amountSpent", 2] }
                 }
             }
@@ -122,10 +126,10 @@ const getEventDetails = async (req, res) => {
 };
 
 const insertUserEvent = async (req, res) => {
-    const { eventType, eventDate, eventTime, eventLocation, eventBudget, guestCount, userId } = req.body;
+    const { eventType, eventDate, eventLocation, eventBudget, guestCount, userId } = req.body;
 
     try {
-        let event = new Event({ eventType, eventDate, eventTime, eventLocation, eventBudget, guestCount, userId });
+        let event = new Event({ eventType, eventDate, eventLocation, eventBudget, guestCount, userId });
         await event.save();
 
         res.status(201).json({ msg: 'Event saved successfully' });
@@ -134,4 +138,18 @@ const insertUserEvent = async (req, res) => {
     }
 };
 
-module.exports = { getUserEvents, insertUserEvent, getEventDetails };
+const updateUserEvent = async (req, res) => {
+    const { eventType, eventDate, eventLocation, eventBudget, guestCount, userId, uuid } = req.body;
+    try {
+        const updatedGuest = await Event.updateOne(
+            { uuid },
+            { $set: { eventType, eventDate, eventLocation, eventBudget, guestCount, userId } }
+        );
+        res.status(201).json({ msg: 'Event updated successfully' });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: error });
+    }
+};
+
+module.exports = { getUserEvents, insertUserEvent, getEventDetails, updateUserEvent };
