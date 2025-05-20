@@ -19,6 +19,13 @@ app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/bookings', require('./routes/bookingRoutes'));
+app.use('/api/guests', require('./routes/guestListRoutes'));
+app.use('/api/checklist', require('./routes/checklistRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
+app.use('/api/transactions', require('./routes/transactionRoutes'));
+app.use('/api/vendors', require('./routes/vendorRoutes'));
+app.use('/api/user-payment', require('./routes/userPaymentDetailRoutes'));
 
 // Start Server
 const PORT = process.env.PORT || 5000;

@@ -3,7 +3,6 @@ const { v4: uuidv4 } = require('uuid'); // Import UUID generator
 
 const EventSchema = new mongoose.Schema({
     eventDate: { type: String, required: true },
-    eventTime: { type: String, required: true },
     eventLocation: { type: String, required: true },
     eventBudget: { type: Number, required: true },
     eventType: { type: String, required: true },
