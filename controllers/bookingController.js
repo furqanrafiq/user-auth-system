@@ -1,4 +1,7 @@
 const { sender, transport } = require("../config/db");
+const puppeteer = require("puppeteer");
+const path = require("path");
+const fs = require("fs");
 const Booking = require("../models/Booking");
 const User = require("../models/User");
 const UserService = require("../models/UserService");
@@ -381,7 +384,7 @@ const receivePaymentFromUser = async (req, res) => {
                 { $set: { isPaymentReceived: true } }
             );
 
-            res.status(200).json({ msg: 'Payment sent successfully' });
+            res.status(200).json({ msg: 'Payment received successfully' });
         } else {
             return res.status(400).json({ msg: 'Please select event first for the vendor' });
         }
@@ -390,6 +393,296 @@ const receivePaymentFromUser = async (req, res) => {
     }
 };
 
+const getAllBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.aggregate([
+            {
+                $match: {
+                    isRequestSent: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "userservices",              // The name of the collection you're joining
+                    localField: "userServiceId",       // Field in Booking
+                    foreignField: "uuid",              // Matching field in UserService
+                    as: "userServiceDetails"
+                }
+            },
+            {
+                $unwind: "$userServiceDetails"         // Optional, but useful to flatten the array
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    let: { requestorId: "$serviceRequestorId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ["$uuid", "$$requestorId"]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                name: 1,
+                                email: 1,
+                                phoneNumber: 1
+                            }
+                        }
+                    ],
+                    as: "userDetails"
+                }
+            },
+            {
+                $unwind: "$userDetails"
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    let: { providerId: "$serviceProviderId" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: ["$uuid", "$$providerId"]
+                                }
+                            }
+                        },
+                        {
+                            $project: {
+                                name: 1,
+                                email: 1,
+                                phoneNumber: 1
+                            }
+                        }
+                    ],
+                    as: "vendorDetails"
+                }
+            },
+            {
+                $unwind: "$vendorDetails"
+            },
+            {
+                $lookup: {
+                    from: "events",              // The name of the collection you're joining
+                    localField: "eventId",       // Field in booking
+                    foreignField: "uuid",              // Matching field in events
+                    as: "EventDetails"
+                }
+            },
+            {
+                $unwind: "$EventDetails"
+            }
+        ]);
+
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(400).json({ error: error });
+    }
+};
+
+const getUserInvoices = async (req, res) => {
+    const { userId } = req.query;
+
+    try {
+        const bookings = await Booking.aggregate([
+            {
+                $match: {
+                    serviceRequestorId: userId,
+                    isPaymentReceived: true
+                }
+            },
+            {
+                $lookup: {
+                    from: "userservices",
+                    localField: "userServiceId",
+                    foreignField: "uuid",
+                    as: "ServiceDetails"
+                }
+            },
+            {
+                $unwind: "$ServiceDetails"
+            },
+            {
+                $lookup: {
+                    from: "events",
+                    localField: "eventId",
+                    foreignField: "uuid",
+                    as: "EventDetails"
+                }
+            },
+            {
+                $unwind: {
+                    path: "$EventDetails",
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $group: {
+                    _id: "$serviceProviderId",
+                    services: {
+                        $push: {
+                            name: "$ServiceDetails.name",
+                            serviceName: "$ServiceDetails.serviceName",
+                            price: "$ServiceDetails.price",
+                            event: "$EventDetails.name",
+                            bookingId: "$uuid"
+                        }
+                    }
+                }
+            },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "_id",
+                    foreignField: "uuid",
+                    as: "VendorDetails"
+                }
+            },
+            {
+                $unwind: "$VendorDetails"
+            }
+        ]);
+
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(400).json({ error: error.message });
+    }
+};
+
+// const downloadInvoice = async (req, res) => {
+//     const { userId } = req.query;
+
+//     try {
+//         const invoiceData = await Booking.aggregate([
+//             { $match: { serviceRequestorId: userId } },
+//             {
+//                 $lookup: {
+//                     from: "userservices",
+//                     localField: "userServiceId",
+//                     foreignField: "uuid",
+//                     as: "ServiceDetails"
+//                 }
+//             },
+//             { $unwind: "$ServiceDetails" },
+//             {
+//                 $group: {
+//                     _id: "$serviceProviderId",
+//                     services: {
+//                         $push: {
+//                             name: "$ServiceDetails.name",
+//                             price: "$ServiceDetails.price"
+//                         }
+//                     }
+//                 }
+//             },
+//             {
+//                 $lookup: {
+//                     from: "users",
+//                     localField: "_id",
+//                     foreignField: "uuid",
+//                     as: "VendorDetails"
+//                 }
+//             },
+//             { $unwind: "$VendorDetails" }
+//         ]);
+
+//         // Generate simple HTML
+//         const htmlContent = `
+//         <html>
+//             <head>
+//                 <style>
+//                     body { font-family: Arial; }
+//                     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+//                     th, td { border: 1px solid #000; padding: 8px; text-align: left; }
+//                     th { background-color: #f2f2f2; }
+//                 </style>
+//             </head>
+//             <body>
+//                 <h1>Invoice Summary</h1>
+//                 ${invoiceData.map(vendor => `
+//                     <h2>Vendor: ${vendor.VendorDetails.name}</h2>
+//                     <table>
+//                         <thead>
+//                             <tr><th>Service</th><th>Price</th></tr>
+//                         </thead>
+//                         <tbody>
+//                             ${vendor.services.map(s => `
+//                                 <tr><td>${s.name}</td><td>${s.price}</td></tr>
+//                             `).join("")}
+//                         </tbody>
+//                     </table>
+//                 `).join("")}
+//             </body>
+//         </html>`;
+
+//         // Launch Puppeteer to create PDF
+//         const browser = await puppeteer.launch();
+//         const page = await browser.newPage();
+//         await page.setContent(htmlContent, { waitUntil: "networkidle0" });
+
+//         const pdfBuffer = await page.pdf({ format: "A4" });
+
+//         await browser.close();
+
+//         // Send PDF file to client
+//         res.set({
+//             "Content-Type": "application/pdf",
+//             "Content-Disposition": `attachment; filename="invoice.pdf"`,
+//             "Content-Length": pdfBuffer.length
+//         });
+
+//         res.send(pdfBuffer);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ error: "Failed to generate invoice PDF" });
+//     }
+// };
 
 
-module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking, getUserVendors, receivePaymentFromUser, sendPaymentToVendor };
+const downloadInvoice = async (req, res) => {
+    try {
+        const browser = await puppeteer.launch({ headless: 'new' }); // set 'new' for latest versions
+        const page = await browser.newPage();
+
+        // Generate dynamic HTML or replace with your HTML content
+        const html = `
+            <html>
+            <head><title>Invoice</title></head>
+            <body>
+                <h1>Invoice</h1>
+                <p>Vendor: Vendor Name</p>
+                <p>Service: Wedding Photography</p>
+                <p>Price: $500</p>
+                <p>Date: ${new Date().toLocaleDateString()}</p>
+            </body>
+            </html>
+        `;
+
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+        });
+
+        await browser.close();
+
+        res.set({
+            'Content-Type': 'application/pdf',
+            'Content-Disposition': 'attachment; filename=invoice.pdf',
+            'Content-Length': pdfBuffer.length,
+        });
+
+        res.send(pdfBuffer);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Error generating PDF');
+    }
+};
+
+
+module.exports = { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking, getUserVendors, receivePaymentFromUser, sendPaymentToVendor, getAllBookings, getUserInvoices, downloadInvoice };

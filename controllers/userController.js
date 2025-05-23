@@ -1,4 +1,6 @@
 const User = require("../models/User");
+const Booking = require("../models/Booking");
+const UserService = require("../models/UserService");
 
 const getUserDetails = async (req, res) => {
     try {
@@ -79,7 +81,6 @@ const activateDeactivateUser = async (req, res) => {
     }
 };
 
-
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).select('-password'); // Exclude password
@@ -100,5 +101,41 @@ const deleteUser = async (req, res) => {
     }
 };
 
+const enableDisableTwoFactor = async (req, res) => {
+    const { twoFactorEnabled, uuid } = req.body;
+    try {
+        const updatedUser = await User.updateOne(
+            { uuid },
+            { $set: { twoFactorEnabled } }
+        );
+        const user = await User.findOne({ uuid }).select('-password').lean() // Exclude password
+        res.status(201).json({ msg: 'Setting updated successfully', user });
+    } catch (error) {
+        res.status(500).json({ error: 'Server error' });
+    }
+};
 
-module.exports = { getUserDetails, insertUser, updateUser, deleteUser, getAllUsers, activateDeactivateUser };
+const adminAnalytics = async (req, res) => {
+    try {
+        const [totalUsers, totalActiveUsers, totalVendors, totalBookings, totalServices] = await Promise.all([
+            User.countDocuments(),
+            User.countDocuments({ isActive: true }),
+            User.countDocuments({ isVendor: true }),
+            Booking.countDocuments(),
+            UserService.countDocuments()
+        ]);
+
+        res.status(200).json({
+            totalUsers,
+            totalActiveUsers,
+            totalVendors,
+            totalBookings,
+            totalServices
+        });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Error fetching analytics' });
+    }
+}
+
+module.exports = { getUserDetails, insertUser, updateUser, deleteUser, getAllUsers, activateDeactivateUser, enableDisableTwoFactor, adminAnalytics };

@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
     phoneNumber: { type: String, required: true },
     isActive: { type: Boolean, default: false },
     isAdmin: { type: Boolean, default: false },
+    twoFactorEnabled: { type: Boolean, default: false },
     otp: { type: String, default: null },
     otpExpiry: { type: String, default: null },
 }, { timestamps: true });

@@ -1,5 +1,5 @@
 const express = require('express');
-const { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService, getRecommendedServices, getAllServiceProviders, getTopRatedServices, updateUserService, deleteUserServiceImage } = require('../controllers/serviceController');
+const { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService, getRecommendedServices, getAllServiceProviders, getTopRatedServices, updateUserService, deleteUserServiceImage, getAllUserServices } = require('../controllers/serviceController');
 
 const router = express.Router();
 
@@ -15,5 +15,6 @@ router.get('/get-recommended-services', getRecommendedServices);
 router.get('/get-service-details', getServiceDetails);
 router.get('/delete-user-service', deleteUserService);
 router.get('/top-rated-services', getTopRatedServices);
+router.get('/get-all-user-services', getAllUserServices);
 
 module.exports = router;

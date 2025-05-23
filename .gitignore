@@ -8,6 +8,8 @@ node_modules/
 dist/
 .env
 ServiceImages/
+package.json
+package-lock.json
 
 # Compiled Java class files
 *.class

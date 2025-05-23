@@ -6,6 +6,7 @@ const UserServiceSchema = new mongoose.Schema({
     userId: { type: String, required: true },
     serviceId: { type: String, required: true },
     serviceName: { type: String, required: true },
+    location: { type: String, required: true },
     name: { type: String, required: true },
     description: { type: String },
     price: { type: Number },

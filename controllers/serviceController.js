@@ -144,7 +144,7 @@ const getUserServices = async (req, res) => {
 }
 
 const insertUserService = async (req, res) => {
-    const { userId, service, description, price, name, images } = req.body;
+    const { userId, service, description, price, name, images, location } = req.body;
     try {
         const userServices = await UserService.findOne({ serviceId: service.uuid, userId });
         if (userServices) return res.status(400).json({ msg: 'User Service already exists' });
@@ -168,7 +168,7 @@ const insertUserService = async (req, res) => {
             imagePaths.push(`/ServiceImages/${fileName}`);
         });
 
-        const newUserService = new UserService({ name, userId, serviceId: service.uuid, serviceName: service.name, description, price });
+        const newUserService = new UserService({ name, userId, serviceId: service.uuid, serviceName: service.name, description, price, location });
         await newUserService.save()
 
         imagePaths.forEach((item) => {
@@ -183,7 +183,7 @@ const insertUserService = async (req, res) => {
 };
 
 const updateUserService = async (req, res) => {
-    const { userId, service, name, price, description, userServiceId, images } = req.body;
+    const { userId, service, name, price, description, userServiceId, images, location } = req.body;
 
     try {
         const updatedService = await UserService.findOneAndUpdate(
@@ -196,6 +196,7 @@ const updateUserService = async (req, res) => {
                     price,
                     description,
                     updatedAt: new Date(),
+                    location
                 },
             }
         );
@@ -433,5 +434,27 @@ const getTopRatedServices = async (req, res) => {
     }
 };
 
+const getAllUserServices = async (req, res) => {
+    try {
+        const userServices = await UserService.aggregate([
+            {
+                $lookup: {
+                    from: "users",              // The name of the collection you're joining
+                    localField: "userId",       // Field in UserService
+                    foreignField: "uuid",              // Matching field in events
+                    as: "userDetails"
+                }
+            },
+            {
+                $unwind: "$userDetails"
+            }
+        ])
+        res.status(200).json(userServices);
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ error: error });
+    }
+}
 
-module.exports = { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService, getRecommendedServices, getAllServiceProviders, getTopRatedServices, updateUserService, deleteUserServiceImage }
+
+module.exports = { getAllServices, insertService, getUserServices, insertUserService, getServicesProvidedByServiceName, getServiceDetails, deleteUserService, getRecommendedServices, getAllServiceProviders, getTopRatedServices, updateUserService, deleteUserServiceImage, getAllUserServices }

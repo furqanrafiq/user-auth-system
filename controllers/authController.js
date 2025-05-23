@@ -67,32 +67,44 @@ const login = async (req, res) => {
 
         if (!user?.isActive) return res.status(400).json({ msg: 'Your email is deactivated. Please contact admin for support.' });
 
-        // Generate 6-digit OTP
-        const otp = Math.floor(100000 + Math.random() * 900000);
-        user.otp = otp;
-        user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
-        await user.save();
+        if (user?.twoFactorEnabled) {
+            // Generate 6-digit OTP
+            const otp = Math.floor(100000 + Math.random() * 900000);
+            user.otp = otp;
+            user.otpExpiry = Date.now() + 5 * 60 * 1000; // 5 minutes
+            await user.save();
 
-        const htmlContent = otpEmail.replace('{{name}}', user.name).replace('{{otp}}', otp);
+            const htmlContent = otpEmail.replace('{{name}}', user.name).replace('{{otp}}', otp);
 
-        const mailOptions = {
-            from: sender,
-            to: email,
-            subject: "OTP for EashShadi Login",
-            html: htmlContent,
-        };
+            const mailOptions = {
+                from: sender,
+                to: email,
+                subject: "OTP for EashShadi Login",
+                html: htmlContent,
+            };
 
-        transport.sendMail(mailOptions, (err, info) => {
-            if (err) {
-                console.error("Email error:", err);
-                return res.status(500).json({ message: "User created but email failed to send" });
-            }
+            transport.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.error("Email error:", err);
+                    return res.status(500).json({ message: "User created but email failed to send" });
+                }
 
-            // success response after email is sent
-            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
-            // res.json({ msg: 'Login Successful', user: { token, user } });
-            res.status(201).json({ msg: 'OTP Sent on email' });
-        });
+                // success response after email is sent
+                const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+                // res.json({ msg: 'Login Successful', user: { token, user } });
+                res.status(201).json({ msg: 'OTP Sent on email' });
+            });
+        } else {
+
+            // Generate login token
+            const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+                expiresIn: '1d',
+            });
+
+            // res.status(200).json({ msg: 'Login successful', token });
+            res.json({ msg: 'Login Successful', user: { token, user } });
+        }
+
 
 
     } catch (error) {

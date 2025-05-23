@@ -1,5 +1,5 @@
 const express = require('express');
-const { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking, getUserVendors, sendPaymentToVendor, receivePaymentFromUser } = require('../controllers/bookingController');
+const { addVendor, getVendorBookings, getSavedVendors, setBookingEvent, sendRequestToVendor, acceptBooking, rejectBooking, getUserVendors, sendPaymentToVendor, receivePaymentFromUser, getAllBookings, getUserInvoices, downloadInvoice } = require('../controllers/bookingController');
 
 const router = express.Router();
 
@@ -13,5 +13,8 @@ router.post('/accept-booking', acceptBooking);
 router.post('/reject-booking', rejectBooking);
 router.post('/send-payment-to-vendor', sendPaymentToVendor);
 router.post('/receive-payment-from-user', receivePaymentFromUser);
+router.get('/get-all-bookings', getAllBookings);
+router.get('/get-user-invoices', getUserInvoices);
+router.get('/download-invoice', downloadInvoice);
 
 module.exports = router;
